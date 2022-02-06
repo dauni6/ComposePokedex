@@ -10,7 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.dontsu.composepokedex.presentation.PokemonListScreen
+import com.dontsu.composepokedex.presentation.pokemonlist.PokemonListScreen
 import com.dontsu.composepokedex.ui.theme.ComposePokedexTheme
 import dagger.hilt.android.AndroidEntryPoint
 
