@@ -14,7 +14,9 @@ import com.dontsu.composepokedex.data.repository.PokemonRepository
 import com.dontsu.composepokedex.util.Constants.PAGE_SIZE
 import com.dontsu.composepokedex.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -29,9 +31,44 @@ class PokemonListViewModel @Inject constructor(
     var loadError = mutableStateOf("")
     var isLoading = mutableStateOf(false)
     var endReached = mutableStateOf(false)
+    var isSearching = mutableStateOf(false)
+
+    private var cachedPokemonList = listOf<PokedexListEntry>()
+    private var isSearchStarting = true
 
     init {
         loadPokemonPaginated()
+    }
+
+    fun searchPokemonList(query: String) {
+        // 검색중인 상태이면 포켓몬리스트의 value를 넣고, 그렇지 않으면 기존 caching된 리스트를 넣는다
+        val listToSearch = if (isSearchStarting) {
+            Timber.d("PokemonListViewModel : isSearching")
+            pokemonList.value
+        } else {
+            Timber.d("PokemonListViewModel : isNotSearching")
+            cachedPokemonList
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            if (query.isEmpty()) {
+                Timber.d("PokemonListViewModel : query.isEmpty")
+                pokemonList.value = cachedPokemonList
+                isSearching.value = false
+                isSearchStarting = true
+                return@launch
+            }
+            val results = listToSearch.filter {
+                it.pokemonName.contains(query.trim(), ignoreCase = true) // 대소문자 신경쓰지않기
+                        || it.number.toString() == query.trim() // 포켓몬 넘버로도 검색할 수 있으므로
+            }
+            if (isSearchStarting) {
+                Timber.d("PokemonListViewModel : isSearching2")
+                cachedPokemonList = pokemonList.value
+                isSearchStarting = false
+            }
+            pokemonList.value = results
+            isSearching.value = true
+        }
     }
 
     fun loadPokemonPaginated() = viewModelScope.launch {

@@ -42,6 +42,7 @@ import com.google.accompanist.coil.rememberCoilPainter
 @Composable
 fun PokemonListScreen(
     navController: NavController,
+    viewModel: PokemonListViewModel = hiltViewModel()
 ) {
     Surface(
         color = MaterialTheme.colors.background,
@@ -62,7 +63,7 @@ fun PokemonListScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-
+                viewModel.searchPokemonList(it)
             }
             Spacer(modifier = Modifier.height(16.dp))
             PokemonList(navController = navController)
@@ -100,7 +101,7 @@ fun SearchBar(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .onFocusChanged {
                     // TextField를 눌렀을 때 hint를 보여줄지 말지
-                    isHintDisplayed = it.isFocused.not()
+                    isHintDisplayed = it.isFocused.not() && text.isNotEmpty()
                 }
         )
         if (isHintDisplayed) {
@@ -123,11 +124,12 @@ fun PokemonList(
     val endReached by remember { viewModel.endReached }
     val loadError by remember { viewModel.loadError }
     val isLoading by remember { viewModel.isLoading }
+    val isSearching by remember { viewModel.isSearching }
 
     LazyColumn(contentPadding = PaddingValues(16.dp) ) {
         val itemCount = if (pokemonList.size % 2 == 0 ) pokemonList.size / 2 else pokemonList.size / 2 + 1
         items(itemCount) {
-            if (it >= itemCount - 1 && !endReached) {
+            if (it >= itemCount - 1 && !endReached && !isLoading && !isSearching) {
                 viewModel.loadPokemonPaginated()
             }
             PokedexRow(
