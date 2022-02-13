@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.ImagePainter
 import coil.compose.rememberImagePainter
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
@@ -38,12 +39,13 @@ import com.dontsu.composepokedex.R
 import com.dontsu.composepokedex.data.model.PokedexListEntry
 import com.dontsu.composepokedex.ui.theme.RobotoCondensed
 import com.google.accompanist.coil.rememberCoilPainter
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @Composable
 fun PokemonListScreen(
     navController: NavController,
-    viewModel: PokemonListViewModel = hiltViewModel()
+    viewModel: PokemonListViewModel = hiltViewModel() // 강의에서는 hiltNavGraphViewModel을 썼지만 라이브러리 버전을 올리면서 사라짐
 ) {
     Surface(
         color = MaterialTheme.colors.background,
@@ -128,16 +130,18 @@ fun PokemonList(
     val isSearching by remember { viewModel.isSearching }
 
     LazyColumn(contentPadding = PaddingValues(16.dp) ) {
-        val itemCount = if (pokemonList.size % 2 == 0 ) pokemonList.size / 2 else pokemonList.size / 2 + 1
+        val itemCount = if (pokemonList.size % 2 == 0 ) {
+            pokemonList.size / 2
+        } else {
+            pokemonList.size / 2 + 1
+        }
         items(itemCount) {
             if (it >= itemCount - 1 && !endReached && !isLoading && !isSearching) {
-                viewModel.loadPokemonPaginated()
+                LaunchedEffect(key1 = true) {
+                    viewModel.loadPokemonPaginated()
+                }
             }
-            PokedexRow(
-                rowIndex = it,
-                entries = pokemonList,
-                navController = navController
-            )
+            PokedexRow(rowIndex = it, entries = pokemonList, navController = navController)
         }
     }
 
@@ -170,6 +174,7 @@ fun PokedexEntry(
     }
 
     Box(
+        contentAlignment = Center,
         modifier = modifier
             .shadow(5.dp, RoundedCornerShape(10.dp))
             .clip(RoundedCornerShape(10.dp))
@@ -183,38 +188,70 @@ fun PokedexEntry(
                 )
             )
             .clickable {
-                Timber.d("PokemonListScreen : ${dominantColor.toArgb()}")
                 navController.navigate(
                     "pokemon_detail_screen/${dominantColor.toArgb()}/${entry.pokemonName}"
                 )
             }
     ) {
+        Timber.d("PokemonListScreen1/PokedexEntry/")
         Column {
-            
+            // 강의용 코드안 되서 StackOverFlow에서 찾은 코드
+            // https://stackoverflow.com/questions/68094647/in-compose-how-to-access-drawable-once-coil-loads-image-from-url
+            val painter = rememberImagePainter(data = entry.imageUrl)
+            val painterState = painter.state
             Image(
-                painter = rememberCoilPainter(
-                    request = ImageRequest.Builder(LocalContext.current)
-                        .data(entry.imageUrl)
-                        .target {
-                            viewModel.calcDominantColor(it) { color ->
-                                Timber.d("PokemonListScreen2 : $color")
-                                dominantColor = color
-                            }
-                        }
-                        .build(),
-                    requestBuilder = {
-                        transformations(CircleCropTransformation())
-                    },
-                    fadeIn = false
-                ),
+                painter = painter,
                 contentDescription = entry.pokemonName,
                 modifier = Modifier
                     .size(120.dp)
                     .align(CenterHorizontally)
             )
-//            CircularProgressIndicator(
-//                color = MaterialTheme.colors.primary,
-//                modifier = Modifier.scale(0.5f)
+            if (painterState is ImagePainter.State.Loading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colors.primary,
+                    modifier = Modifier
+                        .scale(0.5f)
+                        .align(CenterHorizontally)
+                )
+            } else if (painterState is ImagePainter.State.Success) {
+                LaunchedEffect(key1 = painter) {
+                    launch {
+                        val image = painter.imageLoader.execute(painter.request).drawable
+                        viewModel.calcDominantColor(image!!) {
+                            dominantColor = it
+                        }
+                    }
+                }
+            }
+            // 아래는 원래 강의에 있던 코드
+//            Image(
+//                painter = rememberCoilPainter(
+//                    request = ImageRequest.Builder(LocalContext.current)
+//                        .data(entry.imageUrl)
+//                        .target {
+//                            // coil버전이랑 여러가지 버전을 올렸더니 여기가 호출이 안 됨. 사용방법이 다른듯..
+//                            Timber.d("PokemonListScreen2/PokedexEntry/$it")
+//                            viewModel.calcDominantColor(it) { color ->
+//                                dominantColor = color
+//                            }
+//                            // indicator도 안 보임..
+                                // coil 버전이랑 다 올렸더니 indicator를 도저히 어디다가 넣어야 할지 모르겠다.
+//                            CircularProgressIndicator(
+//                                color = MaterialTheme.colors.primary,
+//                                modifier = Modifier.scale(0.5f)
+//                            )
+//                        }
+//                        .build(),
+//                    requestBuilder = {
+//
+//                        transformations(CircleCropTransformation())
+//                    },
+//                    fadeIn = false,
+//                ),
+//                contentDescription = entry.pokemonName,
+//                modifier = Modifier
+//                    .size(120.dp)
+//                    .align(CenterHorizontally)
 //            )
             Text(
                 text = entry.pokemonName,
