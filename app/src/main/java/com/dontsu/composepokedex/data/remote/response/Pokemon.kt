@@ -13,7 +13,7 @@ data class Pokemon(
     @SerializedName("game_indices")
     val gameIndices: List<GameIndice>?,
     @SerializedName("height")
-    val height: Int?,
+    val height: Int,
     @SerializedName("held_items")
     val heldItems: List<HeldItem>?,
     @SerializedName("id")
@@ -37,7 +37,7 @@ data class Pokemon(
     @SerializedName("stats")
     val stats: List<Stat>?,
     @SerializedName("types")
-    val types: List<Type>?,
+    val types: List<Type>,
     @SerializedName("weight")
-    val weight: Int?
+    val weight: Int
 )

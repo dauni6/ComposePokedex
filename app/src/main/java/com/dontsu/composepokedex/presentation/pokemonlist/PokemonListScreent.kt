@@ -38,6 +38,7 @@ import com.dontsu.composepokedex.R
 import com.dontsu.composepokedex.data.model.PokedexListEntry
 import com.dontsu.composepokedex.ui.theme.RobotoCondensed
 import com.google.accompanist.coil.rememberCoilPainter
+import timber.log.Timber
 
 @Composable
 fun PokemonListScreen(
@@ -182,6 +183,7 @@ fun PokedexEntry(
                 )
             )
             .clickable {
+                Timber.d("PokemonListScreen : ${dominantColor.toArgb()}")
                 navController.navigate(
                     "pokemon_detail_screen/${dominantColor.toArgb()}/${entry.pokemonName}"
                 )
@@ -195,6 +197,7 @@ fun PokedexEntry(
                         .data(entry.imageUrl)
                         .target {
                             viewModel.calcDominantColor(it) { color ->
+                                Timber.d("PokemonListScreen2 : $color")
                                 dominantColor = color
                             }
                         }

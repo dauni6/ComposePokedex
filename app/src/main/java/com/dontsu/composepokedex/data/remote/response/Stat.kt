@@ -9,5 +9,5 @@ data class Stat(
     @SerializedName("effort")
     val effort: Int?,
     @SerializedName("stat")
-    val stat: StatX?
+    val stat: StatX
 )
